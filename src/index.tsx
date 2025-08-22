@@ -45,7 +45,8 @@ export default function Index() {
           // Store authentication context (no network needed)
           try {
             await storage.storeAuthenticationContext(authContext);
-          } catch (error) {
+          } catch {
+            // Ignore storage errors during session restoration
           }
 
           // Initialize authenticator service (OFFLINE - uses cached data)
@@ -60,10 +61,11 @@ export default function Index() {
             // Clear the incomplete session data
             await storage.clearStoredSessionToken();
           }
-        } catch (error) {
+        } catch {
           // Don't clear token immediately - it might work when back online
         }
       } else {
+        // No persistent session found, trying credential fallback
       }
 
       // Fallback: Try traditional credential-based login (OFFLINE-FIRST)
@@ -78,8 +80,10 @@ export default function Index() {
           await loadCodes();
           return;
         } else {
+          // No cached authenticator initialization available
         }
       } else {
+        // No stored credentials found
       }
       setIsLoggedIn(false);
       setShowLogin(true);
@@ -101,7 +105,6 @@ export default function Index() {
 
   // Load and refresh codes (offline-first) - with explicit login override for session restoration
   const loadCodes = async (forceLoad: boolean = false) => {
-
     if (!isLoggedIn && !forceLoad) {
       return;
     }
@@ -116,6 +119,7 @@ export default function Index() {
       if (!authCodes || authCodes.length === 0) {
         // Don't show toast for offline - user can sync manually when ready
       } else {
+        // Codes loaded successfully
       }
     } catch (error) {
       console.error("DEBUG: 💥 ERROR in loadCodes:", error);
@@ -135,12 +139,14 @@ export default function Index() {
           message: error instanceof Error ? error.message : "Unknown error",
         });
       } else {
+        // Network error during offline use, fail silently
       }
 
       // Don't clear codes on network errors - keep any existing codes
       if (!isNetworkError) {
         setCodes([]);
       } else {
+        // Keep existing codes during network errors
       }
     }
   };
@@ -403,7 +409,8 @@ export default function Index() {
 
               // The authenticator key should now be cached in the service
               // We need to access the private method, so let's store it via a public method
-            } catch (error) {
+            } catch {
+              // Ignore errors during authenticator key caching
             }
 
             toast.style = Toast.Style.Success;
@@ -491,7 +498,8 @@ export default function Index() {
             await authenticatorService.getAuthCodes();
 
             // The authenticator key should now be cached in the service
-          } catch (error) {
+          } catch {
+            // Ignore errors during authenticator key caching
           }
 
           // Switch to codes view
@@ -569,6 +577,7 @@ export default function Index() {
 
               // Log when code actually changes (new period started)
               if (newCode !== code.code) {
+                // Code updated for new TOTP period
               }
 
               // Always update with fresh values

@@ -156,7 +156,6 @@ export class AuthenticatorService {
   private cachedDecryptionKey: Buffer | null = null; // Changed to Buffer for consistency
 
   async init(): Promise<boolean> {
-
     try {
       // First, try traditional credentials-based initialization
       const credentials = await this.storage.getCredentials();
@@ -175,7 +174,6 @@ export class AuthenticatorService {
   }
 
   private async initWithCredentials(credentials: UserCredentials): Promise<boolean> {
-
     // Get authentication context
     const authContext = await this.storage.getAuthenticationContext();
 
@@ -201,7 +199,7 @@ export class AuthenticatorService {
       if (existingEntities.length === 0) {
         try {
           // Attempt automatic sync, but fail gracefully if offline
-          const syncedEntities = await this.syncAuthenticator(false);
+          await this.syncAuthenticator(false);
         } catch (error) {
           // Check if it's a network error
           const isNetworkError =
@@ -212,11 +210,14 @@ export class AuthenticatorService {
               error.message.includes("timeout"));
 
           if (isNetworkError) {
+            // Network error during initialization - will work offline
           } else {
+            // Other sync error during initialization
           }
           // Don't fail initialization due to sync errors - user can sync manually
         }
       } else {
+        // Already have cached entities, no need to sync
       }
     } catch (error) {
       console.error("DEBUG: Failed to initialize authenticator key:", error);
@@ -226,7 +227,6 @@ export class AuthenticatorService {
   }
 
   private async initWithSessionRestoration(): Promise<boolean> {
-
     // Check if we have authentication context (needed for API calls)
     const authContext = await this.storage.getAuthenticationContext();
     if (!authContext) {
@@ -247,7 +247,7 @@ export class AuthenticatorService {
       if (existingEntities.length === 0) {
         try {
           // Attempt automatic sync, but fail gracefully if offline
-          const syncedEntities = await this.syncAuthenticator(false);
+          await this.syncAuthenticator(false);
         } catch (error) {
           // Check if it's a network error
           const isNetworkError =
@@ -258,11 +258,14 @@ export class AuthenticatorService {
               error.message.includes("timeout"));
 
           if (isNetworkError) {
+            // Network error during session restoration - will work offline
           } else {
+            // Other sync error during session restoration
           }
           // Don't fail session restoration due to sync errors - user can sync manually
         }
       } else {
+        // Already have cached entities, no need to sync
       }
       return true;
     }
@@ -283,11 +286,13 @@ export class AuthenticatorService {
         // Store decrypted key for future session restoration
         try {
           await this.storage.storeDecryptedAuthKey(this.cachedDecryptionKey);
-        } catch (error) {
+        } catch {
+          // Ignore errors when storing decrypted key for session restoration
         }
         return true;
       }
-    } catch (error) {
+    } catch {
+      // API call failed during session restoration
     }
 
     // If we get here, session restoration failed
@@ -325,7 +330,8 @@ export class AuthenticatorService {
           // [PERSISTENCE FIX] Store decrypted key for session restoration
           try {
             await this.storage.storeDecryptedAuthKey(this.cachedDecryptionKey);
-          } catch (error) {
+          } catch {
+            // Ignore errors when storing decrypted key for session restoration
           }
 
           toast.style = Toast.Style.Success;
@@ -336,6 +342,7 @@ export class AuthenticatorService {
       }
       await this.storage.storeAuthKey(authKey);
     } else {
+      // Auth key already exists in storage
     }
 
     this.cachedDecryptionKey = await decryptAuthKey(authKey.encryptedKey, authKey.header, masterKey);
@@ -343,7 +350,8 @@ export class AuthenticatorService {
     // [PERSISTENCE FIX] Store decrypted key for session restoration
     try {
       await this.storage.storeDecryptedAuthKey(this.cachedDecryptionKey);
-    } catch (error) {
+    } catch {
+      // Ignore errors when storing decrypted key for session restoration
     }
 
     return this.cachedDecryptionKey;
@@ -407,7 +415,7 @@ export class AuthenticatorService {
 
           if (change.isDeleted) {
             // EXACT MATCH TO WEB IMPLEMENTATION: Simple deletion
-            const wasDeleted = entityMap.delete(change.id);
+            entityMap.delete(change.id);
           } else if (change.encryptedData && change.header) {
             try {
               const decryptedJson = await decryptAuthEntity(change.encryptedData, change.header, authenticatorKey);
@@ -419,7 +427,7 @@ export class AuthenticatorService {
               } else {
                 // CRITICAL FIX: If parseAuthDataFromUri returns null, it means the entity is trashed
                 // Remove it from the map to match web implementation behavior
-                const wasDeleted = entityMap.delete(change.id);
+                entityMap.delete(change.id);
               }
             } catch (e) {
               console.error(`DEBUG: 💥 Failed to decrypt/parse entity ${change.id}:`, e);
@@ -463,7 +471,6 @@ export class AuthenticatorService {
 
   // SIMPLIFIED STORAGE: Bypass dual storage complexity
   private async storeEntitiesDirectly(entities: AuthData[]): Promise<void> {
-
     try {
       // Try to store encrypted first
       await this.storage.storeAuthEntities(entities);
@@ -480,6 +487,7 @@ export class AuthenticatorService {
     // OFFLINE FIX: Don't trigger automatic sync - let user explicitly sync when ready
     // This prevents "Network error" messages when offline
     if (entities.length === 0) {
+      // No cached entities found - user can sync manually when ready
     }
 
     return entities.map((entity) => {

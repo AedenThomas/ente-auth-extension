@@ -1,5 +1,6 @@
 // src/login.tsx
 import { Action, ActionPanel, Form, showToast, Toast, useNavigation } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
 import { getApiClient, resetApiClient } from "./services/api";
 import { getStorageService } from "./services/storage";
@@ -153,6 +154,7 @@ export default function Login() {
             // Test token validity with SRP-derived session
             const isTokenValid = await freshApiClient.testTokenValidity();
             if (isTokenValid) {
+              // SRP token is valid and ready for use
             } else {
               console.warn("DEBUG: SRP token validation failed - but proceeding");
             }
@@ -241,6 +243,7 @@ export default function Login() {
         if (!isTokenValid) {
           console.warn("DEBUG: Token validation failed - but proceeding with login since authentication succeeded");
         } else {
+          // Token is valid and ready for use
         }
 
         toast.style = Toast.Style.Success;
@@ -252,13 +255,8 @@ export default function Login() {
       console.error("Login error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       setError(message);
-      
-      // SECURITY FIX: Use Raycast utilities for consistent error handling
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Login failed",
-        message: message,
-      });
+
+      await showFailureToast(error, { title: "Login failed" });
     } finally {
       setIsLoading(false);
     }

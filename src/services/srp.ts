@@ -71,7 +71,6 @@ export const generateSRPSetupAttributes = async (kek: string): Promise<SRPSetupA
  * Exactly matches web implementation deriveSRPLoginSubKey function.
  */
 const deriveSRPLoginSubKey = async (kek: string): Promise<string> => {
-
   const kekBuffer = Buffer.from(kek, "base64");
 
   // Use the exact same logic as web implementation:
@@ -128,7 +127,6 @@ const generateSRPClient = async (srpSalt: string, srpUserID: string, loginSubKey
  * Matches web implementation createSRPSession function.
  */
 const createSRPSession = async (srpUserID: string, srpA: string): Promise<CreateSRPSessionResponse> => {
-
   const apiClient = getUnauthenticatedApiClient(); // Use unauthenticated client for SRP
   const response = await apiClient.createSRPSession(srpUserID, srpA);
 
@@ -144,7 +142,6 @@ const verifySRPSession = async (
   srpUserID: string,
   srpM1: string,
 ): Promise<SRPVerificationResponse> => {
-
   try {
     const apiClient = getUnauthenticatedApiClient(); // Use unauthenticated client for SRP
     const response = await apiClient.verifySRPSession(srpUserID, sessionID, srpM1);
@@ -165,7 +162,6 @@ export const performSRPAuthentication = async (
   srpAttributes: SRPAttributes,
   kek: string,
 ): Promise<SRPVerificationResponse> => {
-
   const loginSubKey = await deriveSRPLoginSubKey(kek);
   const srpClient = await generateSRPClient(srpAttributes.srpSalt, srpAttributes.srpUserID, loginSubKey);
 
@@ -192,7 +188,6 @@ export const performSRPAuthentication = async (
  */
 export class SRPAuthenticationService {
   static async performSRPAuthentication(email: string, password: string): Promise<SRPVerificationResponse> {
-
     // Get SRP attributes - matches web implementation flow
     const srpAttributes = await getSRPAttributes(email);
     if (!srpAttributes) {

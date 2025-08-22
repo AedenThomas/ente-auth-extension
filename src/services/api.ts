@@ -82,7 +82,6 @@ export class EnteApiClient {
   }
 
   setToken(token: string): void {
-
     // Validate that the token contains only valid HTTP header characters
     const hasInvalidChars = /[^\x20-\x7E]/.test(token);
 
@@ -131,13 +130,11 @@ export class EnteApiClient {
 
   async getAuthKey(): Promise<AuthKey> {
     try {
-
       const response = await this.client.get("/authenticator/key", {
         headers: this.getAuthenticatedHeaders(),
       });
       return response.data;
     } catch (error) {
-
       if ((error as AxiosError).response?.status === 404) {
         throw new Error("AuthenticatorKeyNotFound");
       }
@@ -165,17 +162,19 @@ export class EnteApiClient {
     // 🔍 DETAILED SERVER RESPONSE LOGGING
 
     if (response.data.diff && Array.isArray(response.data.diff)) {
-      response.data.diff.forEach((entity: AuthEntity, index: number) => {
-
+      response.data.diff.forEach((entity: AuthEntity) => {
         if (entity.encryptedData) {
+          // Entity has encrypted data for processing
         }
 
         if (entity.header) {
+          // Entity has header information
         }
       });
     }
 
     if (response.data.timestamp) {
+      // Server returned timestamp for diff response
     }
     return response.data;
   }
@@ -200,10 +199,10 @@ export class EnteApiClient {
       } catch (error: unknown) {
         const axiosError = error as AxiosError;
         const status = axiosError?.response?.status;
-        const data = axiosError?.response?.data;
 
         // If we get 401 on basic endpoints, token is definitely invalid
         if (status === 401) {
+          // Token is invalid, authentication failed
         }
       }
     }
@@ -217,14 +216,14 @@ export class EnteApiClient {
     let anySuccess = basicTokenValid;
     for (const endpoint of authEndpoints) {
       try {
-        const response = await this.client.get(endpoint.path, { headers });
+        await this.client.get(endpoint.path, { headers });
         anySuccess = true;
       } catch (error: unknown) {
         const axiosError = error as AxiosError;
         const status = axiosError?.response?.status;
-        const data = axiosError?.response?.data;
 
         if (status === 404) {
+          // Authenticator endpoint not found (expected for some accounts)
         }
       }
     }

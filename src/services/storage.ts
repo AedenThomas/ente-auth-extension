@@ -75,13 +75,11 @@ export class StorageService {
 
     // [PERSISTENCE FIX] Store session token separately for direct reuse on startup
     await LocalStorage.setItem("sessionToken", credentials.token);
-
   }
 
   async getCredentials(): Promise<UserCredentials | null> {
     const encryptedData = (await LocalStorage.getItem("credentials")) as string | undefined;
     if (!encryptedData) {
-
       return null;
     }
 
@@ -127,23 +125,18 @@ export class StorageService {
   }
 
   async storeAuthEntities(entities: AuthData[]): Promise<void> {
-
-
     try {
       // FUNDAMENTAL FIX: Always clear both storage locations first to prevent stale data
       await LocalStorage.removeItem("authEntities");
       await LocalStorage.removeItem("authEntities_unencrypted");
 
-
       const encrypted = await this.encryptData(JSON.stringify(entities));
       await LocalStorage.setItem("authEntities", encrypted);
-
     } catch {
       // If encryption fails (e.g., during session restoration without master key),
       // store unencrypted as fallback, but still clear both locations first
 
       await LocalStorage.setItem("authEntities_unencrypted", JSON.stringify(entities));
-
     }
   }
 
@@ -432,19 +425,14 @@ export class StorageService {
   ): Promise<AuthData[]> {
     // console.log(`DEBUG: 🔄 Processing ${entityChanges.length} entity changes for consistent storage`);
 
-    let deletionCount = 0;
-    let updateCount = 0;
-
     // Apply all changes to the entity map
     for (const change of entityChanges) {
       if (change.isDeleted) {
-        const wasDeleted = currentEntities.delete(change.id);
-        // console.log(`DEBUG: ❌ ${wasDeleted ? "Deleted" : "Already missing"} entity ${change.id}`);
-        if (wasDeleted) deletionCount++;
+        currentEntities.delete(change.id);
+        // console.log(`DEBUG: ❌ Deleted entity ${change.id}`);
       } else if (change.entityData) {
         currentEntities.set(change.id, change.entityData);
         // console.log(`DEBUG: ✅ Updated entity ${change.id}`);
-        updateCount++;
       }
     }
 
