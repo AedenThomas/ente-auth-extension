@@ -1,4 +1,4 @@
-declare module 'argon2-wasm' {
+declare module "argon2-wasm" {
   export interface HashOptions {
     pass: Buffer | Uint8Array;
     salt: Buffer | Uint8Array;
