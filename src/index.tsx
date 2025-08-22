@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { List, Action, ActionPanel, Icon, Color, showToast, Toast, Clipboard, Form } from "@raycast/api";
+import { List, Action, ActionPanel, Icon, Color, showToast, Toast, Clipboard, Form, showHUD } from "@raycast/api";
 import { getAuthenticatorService, clearAuthenticatorServiceCache } from "./services/authenticator";
 import { getStorageService } from "./services/storage";
 import { getApiClient, resetApiClient } from "./services/api";
@@ -302,13 +302,11 @@ export default function Index() {
     }
   };
 
-  // Copy code to clipboard
-  const copyCode = async (code: string) => {
+  // Copy and paste code simultaneously
+  const copyAndPasteCode = async (code: string) => {
     await Clipboard.copy(code);
-    await showToast({
-      style: Toast.Style.Success,
-      title: "Code copied to clipboard!",
-    });
+    await Clipboard.paste(code);
+    await showHUD("Copied to clipboard");
   };
 
   // Login form submit handler
@@ -742,7 +740,7 @@ export default function Index() {
             }
             actions={
               <ActionPanel>
-                <Action title="Copy Code" icon={Icon.Clipboard} onAction={() => copyCode(item.code)} />
+                <Action title="Copy Code" icon={Icon.Clipboard} onAction={() => copyAndPasteCode(item.code)} />
                 <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={loadCodes} />
                 <Action title="Sync with Server" icon={Icon.Download} onAction={syncCodes} />
                 <Action
