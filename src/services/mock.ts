@@ -172,7 +172,6 @@ export class MockEnteApiClient {
    * Mock login implementation
    */
   async login(email: string): Promise<{ token: string; userID: number }> {
-    console.log("Mock login for:", email);
 
     // Simulate success for any valid-looking email
     if (email && email.includes("@")) {
@@ -189,7 +188,6 @@ export class MockEnteApiClient {
    * Mock auth key retrieval
    */
   async getAuthKey(): Promise<AuthKey> {
-    console.log("Mock getAuthKey");
     return getMockAuthKey();
   }
 
@@ -197,7 +195,6 @@ export class MockEnteApiClient {
    * Mock auth entities retrieval
    */
   async getAuthDiff(sinceTime = 0, limit = 500): Promise<AuthEntity[]> {
-    console.log("Mock getAuthDiff", { sinceTime, limit });
 
     // In real implementation, this would return AuthEntity objects
     // For mock, we'll convert AuthData to AuthEntity format
@@ -224,13 +221,11 @@ export class MockEnteApiClient {
    * Set token (no-op in mock)
    */
   setToken(token: string): void {
-    console.log("Mock setToken:", token);
   }
 
   /**
    * Test connection (always succeeds in mock)
    */
   async testConnection(): Promise<void> {
-    console.log("Mock testConnection - always succeeds");
   }
 }

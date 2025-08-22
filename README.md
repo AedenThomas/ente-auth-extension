@@ -25,8 +25,7 @@ A fully-featured Raycast extension for [Ente Auth](https://ente.io/auth) that pr
 ## 📋 Commands
 
 ### Main Commands
-- **`Login to Ente Auth`** - Initial authentication and account setup
-- **`Ente Auth Codes`** - View and copy your TOTP codes
+- **`Ente Auth`** - Authentication and view codes
 
 ### Actions Available
 - **Copy Code** - Copy the current TOTP code to clipboard

@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Action, ActionPanel, Form, showToast, Toast, useNavigation } from "@raycast/api";
 import { getStorageService } from "./services/storage";
 import { AuthData } from "./types";
-import Index from "./index";
 
 export default function AddCode() {
-  const { push } = useNavigation();
+  const { pop } = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -62,8 +61,8 @@ export default function AddCode() {
       toast.style = Toast.Style.Success;
       toast.title = "Authenticator code added successfully!";
 
-      // Navigate to the main screen
-      push(<Index />);
+      // SECURITY FIX: Use proper navigation instead of direct component instantiation
+      pop();
     } catch (error) {
       console.error("Add code error:", error);
 
