@@ -7,8 +7,7 @@ import { deriveKeyEncryptionKey, decryptMasterKey, decryptSecretKey, decryptSess
 import { determineAuthMethod, SRPAuthenticationService } from "./services/srp";
 import { generateTOTP } from "./utils/totp";
 import { AuthCode, AuthorizationResponse, UserCredentials } from "./types";
-import { sanitizeErrorMessage, logSecureError, isNetworkError } from "./utils/errorHandling";
-import { validateAuthParameters } from "./utils/validation";
+import { sanitizeErrorMessage, logSecureError } from "./utils/errorHandling";
 
 export default function Index() {
   const [codes, setCodes] = useState<AuthCode[]>([]);
@@ -38,7 +37,7 @@ export default function Index() {
           if (credentials && credentials.masterKey) {
             // Master key successfully restored, now set up session
             storage.setMasterKey(credentials.masterKey);
-            
+
             // Set up API client with stored session (NO NETWORK CALLS YET)
             resetApiClient();
             const apiClient = await getApiClient();
@@ -68,7 +67,7 @@ export default function Index() {
               return;
             }
           }
-          
+
           // If we couldn't restore credentials, clear the incomplete session
           await storage.clearStoredSessionToken();
         } catch (error) {
@@ -93,7 +92,7 @@ export default function Index() {
           // No cached authenticator initialization available
         }
       }
-      
+
       // No valid session or credentials found
       setIsLoggedIn(false);
       setShowLogin(true);
@@ -272,9 +271,7 @@ export default function Index() {
         await showToast({
           style: Toast.Style.Failure,
           title: "Sync failed",
-          message: isNetworkError
-            ? "Please connect to the internet"
-            : sanitizeErrorMessage(error),
+          message: isNetworkError ? "Please connect to the internet" : sanitizeErrorMessage(error),
         });
       }
     } finally {

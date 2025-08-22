@@ -1,37 +1,40 @@
 // src/utils/validation.ts
 // Input validation and sanitization utilities for security remediation
 
-import { ValidationResult, createValidationResult } from './errorHandling';
+import { ValidationResult, createValidationResult } from "./errorHandling";
 
 /**
  * Validates that a token is properly formed and non-empty
  * Prevents invalid tokens from being stored or used
  */
 export function validateToken(token: string | null | undefined): ValidationResult {
-  if (!token || typeof token !== 'string') {
+  if (!token || typeof token !== "string") {
     return createValidationResult(false, "Invalid token: token is null or undefined");
   }
-  
+
   if (token.length === 0) {
     return createValidationResult(false, "Invalid token: token is empty");
   }
-  
+
   // More permissive validation for session tokens - allow standard base64 characters
   const tokenPattern = /^[A-Za-z0-9+/=_-]+$/;
   if (!tokenPattern.test(token)) {
     return createValidationResult(false, "Invalid token: invalid characters in token");
   }
-  
+
   // Token should have reasonable length (not suspiciously short)
   if (token.length < 10) {
     return createValidationResult(false, "Invalid token: token too short");
   }
-  
+
   // Additional validation for HTTP header compatibility (no control characters)
-  if (/[\x00-\x1F\x7F]/.test(token)) {
+  const controlCharsPattern = new RegExp(
+    `[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
+  );
+  if (controlCharsPattern.test(token)) {
     return createValidationResult(false, "Invalid token: contains control characters");
   }
-  
+
   return createValidationResult(true);
 }
 
@@ -40,26 +43,26 @@ export function validateToken(token: string | null | undefined): ValidationResul
  * Prevents malformed secrets from causing application crashes
  */
 export function validateBase32Secret(secret: string | null | undefined): ValidationResult {
-  if (!secret || typeof secret !== 'string') {
+  if (!secret || typeof secret !== "string") {
     return createValidationResult(false, "Invalid secret: secret is null or undefined");
   }
-  
+
   if (secret.length === 0) {
     return createValidationResult(false, "Invalid secret: secret is empty");
   }
-  
+
   // Base32 should only contain A-Z and 2-7, with optional padding (=)
   const base32Pattern = /^[A-Z2-7]+=*$/;
   if (!base32Pattern.test(secret.toUpperCase())) {
     return createValidationResult(false, "Invalid secret: not valid base32 format");
   }
-  
+
   // Base32 length should be multiple of 8 (with padding) or have valid unpadded length
-  const cleanSecret = secret.replace(/=/g, '');
+  const cleanSecret = secret.replace(/=/g, "");
   if (cleanSecret.length === 0) {
     return createValidationResult(false, "Invalid secret: secret contains only padding");
   }
-  
+
   return createValidationResult(true);
 }
 
@@ -70,14 +73,14 @@ export function validateBase32Secret(secret: string | null | undefined): Validat
 export function validateEncryptionCapability(): ValidationResult {
   try {
     // Test if LocalStorage is available
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (typeof window === "undefined" || !window.localStorage) {
       return createValidationResult(false, "LocalStorage not available");
     }
-    
+
     // For Raycast, we should have LocalStorage API available
     // This is a basic check - in practice we'd test actual encryption
     return createValidationResult(true);
-  } catch (error) {
+  } catch {
     return createValidationResult(false, "LocalStorage access failed");
   }
 }
@@ -89,27 +92,28 @@ export function validateEncryptionCapability(): ValidationResult {
 export function validateAuthParameters(params: {
   email?: string;
   password?: string;
-  srpAttributes?: any;
+  srpAttributes?: unknown;
 }): ValidationResult {
   const { email, password, srpAttributes } = params;
-  
-  if (!email || typeof email !== 'string' || email.length === 0) {
+
+  if (!email || typeof email !== "string" || email.length === 0) {
     return createValidationResult(false, "Email is required");
   }
-  
-  if (!password || typeof password !== 'string' || password.length === 0) {
+
+  if (!password || typeof password !== "string" || password.length === 0) {
     return createValidationResult(false, "Password is required");
   }
-  
-  if (!srpAttributes || typeof srpAttributes !== 'object') {
+
+  if (!srpAttributes || typeof srpAttributes !== "object") {
     return createValidationResult(false, "Authentication parameters are missing");
   }
-  
+
   // Validate that srpAttributes has required fields
-  if (!srpAttributes.kekSalt || !srpAttributes.memLimit || !srpAttributes.opsLimit) {
+  const attrs = srpAttributes as Record<string, unknown>;
+  if (!attrs.kekSalt || !attrs.memLimit || !attrs.opsLimit) {
     return createValidationResult(false, "Authentication parameters are incomplete");
   }
-  
+
   return createValidationResult(true);
 }
 
@@ -117,34 +121,37 @@ export function validateAuthParameters(params: {
  * Validates session token response from server
  * Ensures response has required fields before processing
  */
-export function validateSessionResponse(response: any): ValidationResult {
-  if (!response || typeof response !== 'object') {
+export function validateSessionResponse(response: unknown): ValidationResult {
+  if (!response || typeof response !== "object") {
     return createValidationResult(false, "Invalid response format");
   }
-  
+
+  const resp = response as Record<string, unknown>;
+
   // Check for passkey scenario (not supported)
-  if (response.passkeySessionID) {
+  if (resp.passkeySessionID) {
     return createValidationResult(false, "Passkey not supported, kindly disable and login and enable it back");
   }
-  
+
   // For email OTP responses, we just need basic validation
-  if (response.encryptedToken && response.token) {
+  if (resp.encryptedToken && resp.token) {
     return createValidationResult(true);
   }
-  
+
   // For SRP responses, we need keyAttributes
-  if (response.keyAttributes) {
-    if (typeof response.keyAttributes !== 'object') {
+  if (resp.keyAttributes) {
+    if (typeof resp.keyAttributes !== "object") {
       return createValidationResult(false, "Passkey not supported, kindly disable and login and enable it back");
     }
-    
-    if (!response.keyAttributes.kekSalt) {
+
+    const keyAttrs = resp.keyAttributes as Record<string, unknown>;
+    if (!keyAttrs.kekSalt) {
       return createValidationResult(false, "Passkey not supported, kindly disable and login and enable it back");
     }
-    
+
     return createValidationResult(true);
   }
-  
+
   return createValidationResult(false, "Authentication response is incomplete");
 }
 
@@ -153,12 +160,20 @@ export function validateSessionResponse(response: any): ValidationResult {
  * Removes potentially dangerous characters from user input
  */
 export function sanitizeInput(input: string): string {
-  if (typeof input !== 'string') {
-    return '';
+  if (typeof input !== "string") {
+    return "";
   }
-  
+
   // Remove null bytes and control characters except newlines/tabs
-  return input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  const controlChars = [];
+  for (let i = 0; i <= 8; i++) controlChars.push(String.fromCharCode(i));
+  controlChars.push(String.fromCharCode(11));
+  controlChars.push(String.fromCharCode(12));
+  for (let i = 14; i <= 31; i++) controlChars.push(String.fromCharCode(i));
+  controlChars.push(String.fromCharCode(127));
+
+  const controlCharPattern = new RegExp(`[${controlChars.join("")}]`, "g");
+  return input.replace(controlCharPattern, "");
 }
 
 /**
@@ -169,22 +184,22 @@ export function validateEncryptionKey(key: Buffer | Uint8Array | null | undefine
   if (!key) {
     return createValidationResult(false, "Encryption key is null or undefined");
   }
-  
+
   if (!(key instanceof Buffer) && !(key instanceof Uint8Array)) {
     return createValidationResult(false, "Encryption key has invalid type");
   }
-  
+
   // Validate key length - should be 32 bytes for most crypto operations
   if (key.length !== 32) {
     return createValidationResult(false, "Encryption key has invalid length");
   }
-  
+
   // Check for all-zero key (weak key)
-  const isAllZero = Array.from(key).every(byte => byte === 0);
+  const isAllZero = Array.from(key).every((byte) => byte === 0);
   if (isAllZero) {
     return createValidationResult(false, "Encryption key is weak (all zeros)");
   }
-  
+
   return createValidationResult(true);
 }
 
@@ -194,18 +209,18 @@ export function validateEncryptionKey(key: Buffer | Uint8Array | null | undefine
  */
 export function validateStorageOperation(options: {
   requireEncryption: boolean;
-  data: any;
+  data: unknown;
   encryptionAvailable: boolean;
 }): ValidationResult {
   const { requireEncryption, data, encryptionAvailable } = options;
-  
+
   if (!data) {
     return createValidationResult(false, "No data provided for storage");
   }
-  
+
   if (requireEncryption && !encryptionAvailable) {
     return createValidationResult(false, "Encryption required but not available");
   }
-  
+
   return createValidationResult(true);
 }

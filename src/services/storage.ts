@@ -3,7 +3,7 @@ import { LocalStorage } from "@raycast/api";
 import { AuthData, AuthKey, UserCredentials, AuthenticationContext } from "../types";
 import { bufToBase64, base64ToBuf } from "./crypto";
 import { pbkdf2Sync, randomBytes, createCipheriv, createDecipheriv } from "crypto";
-import { validateStorageOperation, validateEncryptionCapability, validateToken } from "../utils/validation";
+import { validateStorageOperation, validateToken } from "../utils/validation";
 import { logSecureError } from "../utils/errorHandling";
 
 const STORAGE_SALT = "ente-raycast-local-storage-salt";
@@ -12,13 +12,13 @@ const IV_LENGTH = 12;
 
 export interface SecureStorageOptions {
   requireEncryption: boolean;
-  fallbackBehavior: 'fail' | 'memory-only';
+  fallbackBehavior: "fail" | "memory-only";
 }
 
 export class StorageService {
   private masterKey: Buffer | null = null;
   private storageEncryptionKey: Buffer | null = null;
-  private memoryStorage: Map<string, any> = new Map(); // Secure memory-only storage
+  private memoryStorage: Map<string, unknown> = new Map(); // Secure memory-only storage
 
   private async getStorageEncryptionKey(): Promise<Buffer> {
     if (this.storageEncryptionKey) {
@@ -120,7 +120,7 @@ export class StorageService {
     try {
       const encrypted = await this.encryptCredentials(JSON.stringify(storableCredentials));
       await LocalStorage.setItem("credentials", encrypted);
-      
+
       console.log("DEBUG: ✅ Credentials stored securely (encrypted)");
     } catch (error) {
       logSecureError(error, "storeCredentials");
@@ -162,9 +162,9 @@ export class StorageService {
           await this.storeCredentials(credentials);
           return credentials;
         } catch (oldMethodError) {
-          console.error("Failed to decrypt credentials with both methods:", { 
-            newMethod: newMethodError, 
-            oldMethod: oldMethodError 
+          console.error("Failed to decrypt credentials with both methods:", {
+            newMethod: newMethodError,
+            oldMethod: oldMethodError,
           });
         }
       } else {
@@ -192,12 +192,15 @@ export class StorageService {
     }
   }
 
-  async storeAuthEntities(entities: AuthData[], options: SecureStorageOptions = { requireEncryption: true, fallbackBehavior: 'fail' }): Promise<void> {
+  async storeAuthEntities(
+    entities: AuthData[],
+    options: SecureStorageOptions = { requireEncryption: true, fallbackBehavior: "fail" },
+  ): Promise<void> {
     // Validate storage operation
     const validation = validateStorageOperation({
       requireEncryption: options.requireEncryption,
       data: entities,
-      encryptionAvailable: await this.isEncryptionAvailable()
+      encryptionAvailable: await this.isEncryptionAvailable(),
     });
 
     if (!validation.isValid) {
@@ -214,15 +217,15 @@ export class StorageService {
       await LocalStorage.setItem("authEntities", encrypted);
     } catch (error) {
       logSecureError(error, "storeAuthEntities");
-      
+
       // SECURITY FIX: Remove plaintext fallback - fail securely instead
-      if (options.fallbackBehavior === 'memory-only') {
+      if (options.fallbackBehavior === "memory-only") {
         // Store in secure memory only as temporary fallback
         this.memoryStorage.set("authEntities", entities);
         console.log("DEBUG: Stored auth entities in secure memory-only mode");
         return;
       }
-      
+
       throw new Error("Failed to store auth entities securely");
     }
   }
@@ -281,12 +284,15 @@ export class StorageService {
     return time ? parseInt(time, 10) : 0;
   }
 
-  async storeAuthenticationContext(context: AuthenticationContext, options: SecureStorageOptions = { requireEncryption: false, fallbackBehavior: 'memory-only' }): Promise<void> {
+  async storeAuthenticationContext(
+    context: AuthenticationContext,
+    options: SecureStorageOptions = { requireEncryption: false, fallbackBehavior: "memory-only" },
+  ): Promise<void> {
     // Validate storage operation
     const validation = validateStorageOperation({
       requireEncryption: options.requireEncryption,
       data: context,
-      encryptionAvailable: await this.isEncryptionAvailable()
+      encryptionAvailable: await this.isEncryptionAvailable(),
     });
 
     if (!validation.isValid && options.requireEncryption) {
@@ -304,14 +310,14 @@ export class StorageService {
       console.log("DEBUG: ✅ Authentication context stored (encrypted)");
     } catch (error) {
       logSecureError(error, "storeAuthenticationContext");
-      
+
       // SECURITY FIX: Only use memory fallback, no plaintext storage
-      if (options.fallbackBehavior === 'memory-only') {
+      if (options.fallbackBehavior === "memory-only") {
         this.memoryStorage.set("authenticationContext", context);
         console.log("DEBUG: Stored authentication context in secure memory-only mode");
         return;
       }
-      
+
       throw new Error("Failed to store authentication context securely");
     }
   }
@@ -397,7 +403,7 @@ export class StorageService {
       // Store session token unencrypted since it's already a derived session token
       // This allows session restoration without master key circular dependency
       await LocalStorage.setItem("persistentSession", JSON.stringify(sessionData));
-      
+
       console.log("DEBUG: ✅ Session token stored for persistence");
     } catch (error) {
       logSecureError(error, "storeSessionToken");

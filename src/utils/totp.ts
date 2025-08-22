@@ -115,7 +115,7 @@ export const generateSecureTOTP = (
     logSecureError(new Error(validation.error || "Invalid base32 secret"), "generateSecureTOTP");
     return {
       success: false,
-      error: sanitizeErrorMessage(validation.error || "Invalid authenticator secret format")
+      error: sanitizeErrorMessage(validation.error || "Invalid authenticator secret format"),
     };
   }
 
@@ -123,16 +123,16 @@ export const generateSecureTOTP = (
     const now = Date.now();
     const counter = Math.floor(now / 1000 / period);
     const code = generate(secret, counter, digits, algorithm, type);
-    
+
     return {
       success: true,
-      code
+      code,
     };
   } catch (error) {
     logSecureError(error, "generateSecureTOTP");
     return {
       success: false,
-      error: sanitizeErrorMessage(error)
+      error: sanitizeErrorMessage(error),
     };
   }
 };

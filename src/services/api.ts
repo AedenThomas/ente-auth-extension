@@ -11,7 +11,7 @@ import {
 } from "../types";
 import { getStorageService } from "./storage";
 import { validateToken, validateSessionResponse } from "../utils/validation";
-import { sanitizeErrorMessage, logSecureError, isNetworkError } from "../utils/errorHandling";
+import { sanitizeErrorMessage, logSecureError } from "../utils/errorHandling";
 
 const API_BASE_URL = "https://api.ente.io";
 
@@ -52,7 +52,9 @@ export class EnteApiClient {
               error.message = "Access denied. Please check your permissions.";
               break;
             default:
-              error.message = sanitizeErrorMessage(error.response.data || "An API error occurred. Please try again later.");
+              error.message = sanitizeErrorMessage(
+                error.response.data || "An API error occurred. Please try again later.",
+              );
           }
         } else if (error.request) {
           error.message = "Network error. Please check your connection.";
@@ -110,21 +112,21 @@ export class EnteApiClient {
   async verifyEmailOTP(email: string, otp: string): Promise<AuthorizationResponse> {
     try {
       const response = await this.client.post("/users/verify-email", { email, ott: otp });
-      
+
       // SECURITY FIX: Validate session response to prevent passkey issues
       const validation = validateSessionResponse(response.data);
       if (!validation.isValid) {
         logSecureError(new Error(validation.error || "Invalid session response"), "verifyEmailOTP");
         throw new Error(sanitizeErrorMessage(validation.error || "Authentication response validation failed"));
       }
-      
+
       return response.data;
     } catch (error) {
       // SECURITY FIX: Sanitize error messages to prevent information leakage
       if (error instanceof Error && error.message.includes("Passkey not supported")) {
         throw error; // Pass through our sanitized passkey message
       }
-      
+
       logSecureError(error, "verifyEmailOTP");
       const sanitizedMessage = sanitizeErrorMessage(error);
       throw new Error(sanitizedMessage);
@@ -154,21 +156,21 @@ export class EnteApiClient {
         sessionID,
         srpM1,
       });
-      
+
       // SECURITY FIX: Validate session response to prevent passkey issues
       const validation = validateSessionResponse(response.data);
       if (!validation.isValid) {
         logSecureError(new Error(validation.error || "Invalid SRP session response"), "verifySRPSession");
         throw new Error(sanitizeErrorMessage(validation.error || "SRP authentication response validation failed"));
       }
-      
+
       return response.data;
     } catch (error) {
       // SECURITY FIX: Sanitize error messages to prevent information leakage
       if (error instanceof Error && error.message.includes("Passkey not supported")) {
         throw error; // Pass through our sanitized passkey message
       }
-      
+
       logSecureError(error, "verifySRPSession");
       const sanitizedMessage = sanitizeErrorMessage(error);
       throw new Error(sanitizedMessage);
